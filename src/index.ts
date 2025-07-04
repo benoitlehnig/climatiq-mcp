@@ -102,20 +102,7 @@ class ClimatiqMCPServer {
             required: ["activity_id", "amount", "unit_type", "unit"],
           },
         },
-        {
-          name: "get_emission_factor_details",
-          description: "Get detailed information about a specific emission factor",
-          inputSchema: {
-            type: "object",
-            properties: {
-              activity_id: {
-                type: "string",
-                description: "Activity ID from search results",
-              },
-            },
-            required: ["activity_id"],
-          },
-        },
+
       ],
     }));
 
@@ -127,8 +114,6 @@ class ClimatiqMCPServer {
           return await this.searchEmissionFactors(args);
         } else if (name === "calculate_emissions") {
           return await this.calculateEmissions(args);
-        } else if (name === "get_emission_factor_details") {
-          return await this.getEmissionFactorDetails(args);
         } else {
           throw new McpError(
             ErrorCode.MethodNotFound,
@@ -503,96 +488,7 @@ class ClimatiqMCPServer {
     }
   }
 
-  private async getEmissionFactorDetails(args: any) {
-    const { activity_id } = args;
 
-    if (!this.climatiqApiKey) {
-      throw new Error("Climatiq API key not configured. Please set CLIMATIQ_API_KEY environment variable.");
-    }
-
-    try {
-      console.error(`Getting details for: ${activity_id}`);
-      
-      const response = await axios.get(`https://api.climatiq.io/data/v1/emission-factors/${activity_id}`, {
-        headers: {
-          Authorization: `Bearer ${this.climatiqApiKey}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const details = response.data;
-
-      const formattedDetails = {
-        activity_id: details.activity_id,
-        name: details.name,
-        category: details.category,
-        factor: details.factor,
-        factor_unit: details.factor_unit,
-        region: details.region,
-        year: details.year,
-        source: details.source,
-        description: details.description,
-        methodology: details.methodology,
-        supported_units: details.supported_units || [],
-        uncertainty: details.uncertainty,
-        data_quality_flags: details.data_quality_flags || [],
-      };
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(formattedDetails, null, 2),
-          },
-        ],
-      };
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("Climatiq API error:", (error as any).response?.data || errorMessage);
-      
-      if ((error as any).response) {
-        const status = (error as any).response.status;
-        const errorData = (error as any).response.data;
-        
-        // Mask API key for security (show first 4 and last 4 characters)
-        const maskedApiKey = this.climatiqApiKey 
-          ? `${this.climatiqApiKey.substring(0, 4)}...${this.climatiqApiKey.substring(this.climatiqApiKey.length - 4)}`
-          : "NOT_SET";
-        
-        if (status === 401) {
-          const serverError = errorData?.error || (error as any).response.statusText || "Unknown server error";
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Invalid Climatiq API key (${maskedApiKey}). Server response: ${serverError}. Please check your API key configuration.`
-          );
-        } else if (status === 403) {
-          const serverError = errorData?.error || (error as any).response.statusText || "Unknown server error";
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Climatiq API access forbidden with key ${maskedApiKey}. Server response: ${serverError}. Check your API key permissions and subscription.`
-          );
-        } else if (status === 429) {
-          const serverError = errorData?.error || (error as any).response.statusText || "Unknown server error";
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Climatiq API rate limit exceeded with key ${maskedApiKey}. Server response: ${serverError}. Please try again later or upgrade your plan.`
-          );
-        } else {
-          const serverError = errorData?.error || (error as any).response.statusText || "Unknown server error";
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Climatiq API error (${status}) with key ${maskedApiKey}. Server response: ${serverError}. Full error data: ${JSON.stringify(errorData)}`
-          );
-        }
-      } else {
-        throw new McpError(
-          ErrorCode.InternalError,
-          `Network error: ${errorMessage}. API key used: ${this.climatiqApiKey ? "SET" : "NOT_SET"}`
-        );
-      }
-    }
-  }
 
 
 

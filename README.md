@@ -32,20 +32,14 @@ An intelligent MCP (Model Context Protocol) server that analyzes documents for e
    npm install
    ```
 
-3. **Set up environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your CLIMATIQ_API_KEY
-   ```
-
-4. **Build the project**
+3. **Build the project**
    ```bash
    npm run build
    ```
 
 ### Configuration
 
-Add to your Claude Desktop config (`claude_desktop_config.json`):
+The API key is configured through Claude Desktop, not environment files. Add to your Claude Desktop config (`claude_desktop_config.json`):
 
 ```json
 {
