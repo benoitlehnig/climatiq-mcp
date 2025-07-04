@@ -29,6 +29,7 @@
     "url": "https://github.com/yourusername/climatiq-emissions-mcp-server/issues"
   },
   "homepage": "https://github.com/yourusername/climatiq-emissions-mcp-server#readme",
+  "keywords": [
     "mcp",
     "climatiq",
     "emissions",
@@ -36,6 +37,6 @@
     "pdf",
     "sustainability"
   ],
-  "author": "Your Name",
+  "author": "Benoit Lehnig",
   "license": "MIT"
 }
