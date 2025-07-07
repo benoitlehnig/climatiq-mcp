@@ -1,177 +1,112 @@
-# Climatiq Emissions MCP Server
+---
+title: Climatiq MCP TypeScript Interface
+emoji: 🌍
+colorFrom: green
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+---
 
-An intelligent MCP (Model Context Protocol) server that analyzes documents for emissions data and automatically calculates CO2 emissions using the Climatiq API. Built for seamless integration with Claude AI.
+# 🌍 Climatiq MCP TypeScript Interface
 
-## 🌟 Features
+A **TypeScript-based Model Context Protocol (MCP) server** with web interface for calculating CO2 emissions using the Climatiq API.
 
-- **Intelligent Document Analysis**: Uses Claude's native understanding to extract emissions data from any document type
-- **Automated Emission Calculations**: Integrates with Climatiq API for accurate emission factors
-- **Multi-Format Support**: Works with PDFs, images, scanned documents, and more
-- **Smart Matching**: Intelligently matches materials and activities to emission factors
-- **Flexible Output**: JSON, CSV, summary, and detailed report formats
-- **Conversation-Based Interface**: Natural language interaction through Claude
+## 🚀 Features
 
-## 🚀 Quick Start
+- **🔍 Search Emission Factors**: Find emission factors by keyword, region, and category
+- **🧮 Calculate Emissions**: Calculate CO2 emissions using specific emission factors  
+- **🌍 Multi-region Support**: Support for global emission factors (FR, DE---
+title: Climatiq MCP Interface
+emoji: 🌍
+colorFrom: green
+colorTo: blue
+sdk: gradio
+sdk_version: 4.44.0
+app_file: app.py
+pinned: false
+license: mit
+---
 
-### Prerequisites
+# 🌍 Climatiq MCP Interface
 
-- Node.js 18+
-- Climatiq API key ([sign up here](https://climatiq.io))
-- Claude Desktop or any MCP-compatible client
+A Gradio-based web interface to test the **Climatiq MCP (Model Context Protocol)** server functionality for calculating CO2 emissions.
 
-### Installation
+## 🚀 Features
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/climatiq-emissions-mcp-server.git
-   cd climatiq-emissions-mcp-server
-   ```
+- **🔍 Search Emission Factors**: Find emission factors by keyword, region, and category
+- **🧮 Calculate Emissions**: Calculate CO2 emissions using specific emission factors  
+- **🌍 Multi-region Support**: Support for global emission factors (FR, DE, US, etc.)
+- **📊 Interactive Results**: View detailed emission breakdowns and factor information
+- **⚡ Quick Examples**: Pre-configured examples for common use cases
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+## 🛠️ How to Use
 
-3. **Build the project**
-   ```bash
-   npm run build
-   ```
+### 1. Configure API Key
+This Space requires a Climatiq API key. To set it up:
 
-### Configuration
+1. Go to [Climatiq.io](https://climatiq.io) and create an account
+2. Get your API key from the dashboard
+3. In this Space's Settings → Repository secrets, add:
+   - Name: `CLIMATIQ_API_KEY`
+   - Value: Your Climatiq API key
 
-The API key is configured through Claude Desktop, not environment files. Add to your Claude Desktop config (`claude_desktop_config.json`):
+### 2. Search for Emission Factors
+- Enter search terms like "electricity", "concrete", "transport"
+- Filter by region (FR, DE, US, etc.) and category
+- Browse the results table to find appropriate emission factors
 
-```json
-{
-  "mcpServers": {
-    "climatiq-emissions": {
-      "command": "node",
-      "args": ["./dist/index.js"],
-      "env": {
-        "CLIMATIQ_API_KEY": "your_api_key_here"
-      }
-    }
-  }
-}
+### 3. Calculate Emissions
+- Copy the Activity ID from search results
+- Enter your activity data (amount, unit, unit type)
+- Specify the region if needed
+- Click "Calculate Emissions" to get CO2eq results
+
+## 📋 Example Use Cases
+
+### Electricity Emissions
+```
+Search: "electricity france"
+Activity ID: electricity-supply_grid-source_production_mix
+Amount: 100 kWh (Energy) - Region: FR
+Result: ~3-6 kg CO2eq (low carbon due to nuclear)
 ```
 
-## 📖 Usage
-
-### Basic Document Analysis
-
-1. Upload any document containing emissions data to Claude
-2. Ask: "Can you analyze this document for CO2 emissions?"
-3. Claude will extract materials, quantities, and activities
-4. The server automatically matches with Climatiq emission factors
-5. Get detailed emissions calculations and insights
-
-### Example Workflow
-
+### Natural Gas Emissions  
 ```
-User: "Analyze this construction materials list for emissions"
-[uploads PDF]
-
-Claude: "I found these materials:
-- Concrete: 150 tonnes
-- Steel rebar: 25 tonnes  
-- Aluminum windows: 500 kg
-
-Total emissions: 109.25 tonnes CO2e
-Breakdown: Steel (48%), Concrete (48%), Aluminum (4%)"
+Search: "natural gas industrial"
+Activity ID: fuel-type_natural_gas-fuel_use_industrial
+Amount: 10 m³ (Volume) - Region: CA
+Result: ~20 kg CO2eq
 ```
 
-### Available Tools
-
-- `analyze_emissions_document` - Intelligent document analysis
-- `get_emission_suggestions` - Find emission factors for materials/activities
-- `calculate_emissions` - Calculate CO2 emissions for specific items
-
-## 🏗️ Architecture
-
+### Transport Emissions
 ```
-Document → Claude Analysis → Climatiq API → Emissions Report
-    ↓           ↓               ↓              ↓
-   PDF      Extract Data    Match Factors   Calculate CO2
-  Image     Understand      Get Rates       Generate Report
-  Scan      Context         Validate        Format Output
+Search: "truck transport"
+Select appropriate truck type from results
+Amount: 100 km (Distance)
+Result: Varies by vehicle type and load
 ```
 
-## 🧪 Development
+## 🔧 Technical Details
 
-### Run in Development
-```bash
-npm run dev
-```
+This interface connects to the Climatiq API to:
+- Search their database of 100,000+ emission factors
+- Calculate accurate CO2 equivalent emissions  
+- Support various unit types (Energy, Weight, Volume, Distance, Number)
+- Provide detailed emission breakdowns (CO2, CH4, N2O)
 
-### Run Tests
-```bash
-npm test
-```
+## 📚 About Climatiq MCP
 
-### Build for Production
-```bash
-npm run build
-npm start
-```
-
-## 📊 Example Use Cases
-
-- **Construction Projects**: Material lists, energy consumption
-- **Transportation**: Fleet emissions, logistics data
-- **Manufacturing**: Production materials, energy usage
-- **Facilities**: Utility bills, maintenance records
-- **Supply Chain**: Shipping manifests, procurement data
-
-## 🔧 Configuration Options
-
-### Document Types
-- `construction` - Building materials and construction activities
-- `transportation` - Vehicle usage and logistics
-- `energy` - Electricity, fuel, and energy consumption
-- `manufacturing` - Production processes and materials
-- `general` - Any type of document
-
-### Analysis Depth
-- `quick` - Basic emissions sources only
-- `detailed` - Direct and indirect emissions (default)
-- `comprehensive` - Full lifecycle analysis
-
-### Output Formats
-- `json` - Structured data for API integration
-- `csv` - Spreadsheet-compatible format
-- `summary` - Executive summary with key metrics
-- `report` - Detailed analysis report
-
-## 🌍 Climatiq Integration
-
-This server leverages the [Climatiq API](https://climatiq.io) for:
-- Comprehensive emission factor database
-- Regional variations and accuracy
-- Scientific data sources
-- Regular updates and validation
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This interface demonstrates the capabilities of a Model Context Protocol (MCP) server for Climatiq, which can be integrated with AI assistants like Claude to provide real-time emission calculations in conversations.
 
 ## 🔗 Links
 
 - [Climatiq API Documentation](https://docs.climatiq.io)
 - [Model Context Protocol](https://modelcontextprotocol.io)
-- [Claude Desktop](https://claude.ai/desktop)
+- [Source Code](https://github.com/yourusername/climatiq-emissions-mcp-server)
 
-## 📧 Support
+## 📄 License
 
-For questions or support, please open an issue on GitHub or contact [your-email@domain.com].
-
----
-
-Built with ❤️ for a sustainable future 🌱
+MIT License - Feel free to use and modify for your sustainability projects!

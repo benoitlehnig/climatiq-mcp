@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌍 Climatiq MCP Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="climatiqApp()" x-cloak>
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">🌍 Climatiq MCP Interface</h1>
+            <p class="text-gray-600">Test interface for CO2 emissions calculation using Climatiq API</p>
+            <div class="mt-4 text-sm text-gray-500">
+                <span class="bg-green-100 text-green-800 px-2 py-1 rounded">Climatiq API</span>
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded ml-2">MCP Server</span>
+                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded ml-2">TypeScript</span>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="flex justify-center mb-8">
+            <div class="flex bg-white rounded-lg shadow-md p-1">
+                <button @click="activeTab = 'search'" 
+                        :class="activeTab === 'search' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                        class="px-6 py-2 rounded-md transition duration-200">
+                    🔍 Search Factors
+                </button>
+                <button @click="activeTab = 'calculate'" 
+                        :class="activeTab === 'calculate' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                        class="px-6 py-2 rounded-md transition duration-200">
+                    🧮 Calculate Emissions
+                </button>
+            </div>
+        </div>
+
+        <!-- Search Panel -->
+        <div x-show="activeTab === 'search'" class="max-w-6xl mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-2xl font-semibold mb-4 flex items-center">
+                    🔍 Search Emission Factors
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Search Query</label>
+                        <input type="text" x-model="searchForm.query" 
+                               placeholder="e.g., electricity, concrete, transport..."
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                        <select x-model="searchForm.region" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All regions</option>
+                            <option value="FR">🇫🇷 France</option>
+                            <option value="DE">🇩🇪 Germany</option>
+                            <option value="US">🇺🇸 United States</option>
+                            <option value="GB">🇬🇧 United Kingdom</option>
+                            <option value="CA">🇨🇦 Canada</option>
+                            <option value="ES">🇪🇸 Spain</option>
+                            <option value="IT">🇮🇹 Italy</option>
+                            <option value="AU">🇦🇺 Australia</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <select x-model="searchForm.category" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All categories</option>
+                            <option value="Electricity">⚡ Electricity</option>
+                            <option value="Fuel">⛽ Fuels</option>
+                            <option value="Materials">🏗️ Materials</option>
+                            <option value="Transport">🚚 Transport</option>
+                            <option value="Food">🍎 Food</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Results</label>
+                        <select x-model="searchForm.results_per_page" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="5">5 results</option>
+                            <option value="10">10 results</option>
+                            <option value="20">20 results</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button @click="searchFactors()" :disabled="loading.search"
+                        class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 font-medium">
+                    <span x-show="!loading.search" class="flex items-center">
+                        🔍 <span class="ml-2">Search</span>
+                    </span>
+                    <span x-show="loading.search" class="flex items-center">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Searching...
+                    </span>
+                </button>
+            </div>
+
+            <!-- Search Results -->
+            <div x-show="searchResults.length > 0" class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-xl font-semibold flex items-center">
+                        📊 <span class="ml-2">Search Results</span>
+                        <span class="ml-2 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm" x-text="searchResults.length + ' results'"></span>
+                    </h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="result in searchResults" :key="result.activity_id">
+                                <tr class="hover:bg-gray-50 transition duration-150">
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm font-medium text-gray-900" x-text="result.name"></div>
+                                        <div class="text-sm text-gray-500" x-text="result.category"></div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-xs font-mono bg-gray-100 px-2 py-1 rounded" x-text="result.activity_id"></div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900" x-text="result.region"></td>
+                                    <td class="px-6 py-4">
+                                        <span class="text-sm text-gray-900" x-text="result.unit"></span>
+                                        <span class="text-xs text-gray-500" x-text="'(' + result.unit_type + ')'"></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900" x-text="result.source"></td>
+                                    <td class="px-6 py-4">
+                                        <button @click="useForCalculation(result)"
+                                                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition duration-200">
+                                            ✅ Use
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculate Panel -->
+        <div x-show="activeTab === 'calculate'" class="max-w-3xl mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-2xl font-semibold mb-4 flex items-center">
+                    🧮 Calculate CO2 Emissions
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Activity ID</label>
+                        <input type="text" x-model="calcForm.activity_id" 
+                               placeholder="e.g., electricity-supply_grid-source_production_mix"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-xs text-gray-500 mt-1">Use the search above to find the appropriate Activity ID</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                            <input type="number" x-model="calcForm.amount" placeholder="100" step="any"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                            <input type="text" x-model="calcForm.unit" placeholder="kWh"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Unit Type</label>
+                            <select x-model="calcForm.unit_type" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="Energy">⚡ Energy (kWh, MJ, etc.)</option>
+                                <option value="Weight">⚖️ Weight (kg, tonnes, etc.)</option>
+                                <option value="Volume">📦 Volume (m³, liters, etc.)</option>
+                                <option value="Distance">📏 Distance (km, miles, etc.)</option>
+                                <option value="Number">🔢 Number (units)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Region (optional)</label>
+                            <input type="text" x-model="calcForm.region" placeholder="FR"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+                
+                <button @click="calculateEmissions()" :disabled="loading.calculate || !calcForm.activity_id || !calcForm.amount"
+                        class="mt-6 bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 font-medium">
+                    <span x-show="!loading.calculate" class="flex items-center">
+                        🧮 <span class="ml-2">Calculate</span>
+                    </span>
+                    <span x-show="loading.calculate" class="flex items-center">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Calculating...
+                    </span>
+                </button>
+            </div>
+
+            <!-- Calculation Result -->
+            <div x-show="calculationResult" class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    📈 <span class="ml-2">Calculation Result</span>
+                </h3>
+                <template x-if="calculationResult">
+                    <div class="space-y-6">
+                        <!-- Main Result -->
+                        <div class="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6 text-center">
+                            <div class="text-4xl font-bold text-green-800 mb-2">
+                                <span x-text="calculationResult.co2e_emissions.total"></span>
+                                <span class="text-2xl" x-text="calculationResult.co2e_emissions.unit"></span>
+                                <span class="text-lg">CO2eq</span>
+                            </div>
+                            <div class="text-sm text-green-600 font-medium">Total emissions calculated</div>
+                        </div>
+                        
+                        <!-- Details Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-800 mb-2">📊 Emission Factor</h4>
+                                <div class="space-y-1 text-sm">
+                                    <div><span class="font-medium">Name:</span> <span x-text="calculationResult.emission_factor.name"></span></div>
+                                    <div><span class="font-medium">Region:</span> <span x-text="calculationResult.emission_factor.region"></span></div>
+                                    <div><span class="font-medium">Source:</span> <span x-text="calculationResult.emission_factor.source"></span></div>
+                                    <div><span class="font-medium">Year:</span> <span x-text="calculationResult.emission_factor.year"></span></div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-800 mb-2">📋 Activity Data</h4>
+                                <div class="space-y-1 text-sm">
+                                    <div><span class="font-medium">Amount:</span> <span x-text="calculationResult.activity_data.amount + ' ' + calculationResult.activity_data.unit"></span></div>
+                                    <div><span class="font-medium">Type:</span> <span x-text="calcForm.unit_type"></span></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Breakdown if available -->
+                        <div x-show="calculationResult.breakdown && (calculationResult.breakdown.co2 || calculationResult.breakdown.ch4 || calculationResult.breakdown.n2o)" 
+                             class="bg-blue-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-800 mb-2">🔬 Emission Breakdown</h4>
+                            <div class="grid grid-cols-3 gap-4 text-sm">
+                                <div x-show="calculationResult.breakdown.co2">
+                                    <span class="font-medium">CO2:</span> 
+                                    <span x-text="calculationResult.breakdown.co2 + ' kg'"></span>
+                                </div>
+                                <div x-show="calculationResult.breakdown.ch4">
+                                    <span class="font-medium">CH4:</span> 
+                                    <span x-text="calculationResult.breakdown.ch4 + ' kg'"></span>
+                                </div>
+                                <div x-show="calculationResult.breakdown.n2o">
+                                    <span class="font-medium">N2O:</span> 
+                                    <span x-text="calculationResult.breakdown.n2o + ' kg'"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- JSON Details -->
+                        <details class="border rounded-lg">
+                            <summary class="cursor-pointer font-medium p-3 hover:bg-gray-50">
+                                🔍 View full details (JSON)
+                            </summary>
+                            <div class="p-3 border-t bg-gray-50">
+                                <pre class="text-xs bg-white p-3 rounded border overflow-auto max-h-64" x-text="JSON.stringify(calculationResult, null, 2)"></pre>
+                            </div>
+                        </details>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Quick Examples -->
+            <div class="mt-8 bg-blue-50 rounded-lg p-6">
+                <h4 class="font-semibold text-gray-800 mb-3">⚡ Quick Examples</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="bg-white p-3 rounded">
+                        <strong>🇫🇷 French Electricity (Low Carbon)</strong><br>
+                        <code>electricity-supply_grid-source_production_mix</code><br>
+                        100 kWh (Energy) - Region: FR<br>
+                        <em>Expected: ~3-6 kg CO2eq</em>
+                    </div>
+                    <div class="bg-white p-3 rounded">
+                        <strong>🇩🇪 German Electricity (Higher Carbon)</strong><br>
+                        <code>electricity-supply_grid-source_production_mix</code><br>
+                        100 kWh (Energy) - Region: DE<br>
+                        <em>Expected: ~35-45 kg CO2eq</em>
+                    </div>
+                    <div class="bg-white p-3 rounded">
+                        <strong>⛽ Natural Gas Industrial</strong><br>
+                        <code>fuel-type_natural_gas-fuel_use_industrial</code><br>
+                        10 m3 (Volume) - Region: CA<br>
+                        <em>Expected: ~20 kg CO2eq</em>
+                    </div>
+                    <div class="bg-white p-3 rounded">
+                        <strong>🚚 Transport</strong><br>
+                        Search for "truck transport"<br>
+                        100 km (Distance)<br>
+                        <em>Varies by vehicle type</em>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Messages -->
+        <div x-show="error" class="fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg max-w-md z-50">
+            <div class="flex items-center justify-between">
+                <span x-text="error"></span>
+                <button @click="error = ''" class="ml-3 text-white hover:text-gray-200 text-xl">×</button>
+            </div>
+        </div>
+
+        <!-- Success Messages -->
+        <div x-show="success" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg max-w-md z-50">
+            <div class="flex items-center justify-between">
+                <span x-text="success"></span>
+                <button @click="success = ''" class="ml-3 text-white hover:text-gray-200 text-xl">×</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function climatiqApp() {
+            return {
+                activeTab: 'search',
+                loading: {
+                    search: false,
+                    calculate: false
+                },
+                error: '',
+                success: '',
+                
+                searchForm: {
+                    query: '',
+                    region: '',
+                    category: '',
+                    results_per_page: 10
+                },
+                
+                calcForm: {
+                    activity_id: '',
+                    amount: 100,
+                    unit: 'kWh',
+                    unit_type: 'Energy',
+                    region: 'FR'
+                },
+                
+                searchResults: [],
+                calculationResult: null,
+                
+                async searchFactors() {
+                    if (!this.searchForm.query.trim()) {
+                        this.error = 'Please enter a search query';
+                        setTimeout(() => this.error = '', 3000);
+                        return;
+                    }
+
+                    this.loading.search = true;
+                    this.error = '';
+                    this.searchResults = [];
+                    
+                    try {
+                        const response = await fetch('/api/search-emission-factors', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.searchForm)
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            this.searchResults = data.results || [];
+                            if (this.searchResults.length === 0) {
+                                this.error = 'No results found for this search';
+                            } else {
+                                this.success = `${this.searchResults.length} emission factor(s) found`;
+                                setTimeout(() => this.success = '', 3000);
+                            }
+                        } else {
+                            this.error = data.error || 'Error during search';
+                        }
+                    } catch (err) {
+                        this.error = 'Connection error to server';
+                        console.error('Search error:', err);
+                    } finally {
+                        this.loading.search = false;
+                    }
+                },
+                
+                async calculateEmissions() {
+                    if (!this.calcForm.activity_id.trim()) {
+                        this.error = 'Please enter an Activity ID';
+                        setTimeout(() => this.error = '', 3000);
+                        return;
+                    }
+
+                    if (!this.calcForm.amount || this.calcForm.amount <= 0) {
+                        this.error = 'Please enter a valid amount';
+                        setTimeout(() => this.error = '', 3000);
+                        return;
+                    }
+
+                    this.loading.calculate = true;
+                    this.error = '';
+                    this.calculationResult = null;
+                    
+                    try {
+                        const response = await fetch('/api/calculate-emissions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.calcForm)
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            this.calculationResult = data;
+                            this.success = 'Emissions calculation successful!';
+                            setTimeout(() => this.success = '', 3000);
+                        } else {
+                            this.error = data.error || 'Error during calculation';
+                        }
+                    } catch (err) {
+                        this.error = 'Connection error to server';
+                        console.error('Calculation error:', err);
+                    } finally {
+                        this.loading.calculate = false;
+                    }
+                },
+                
+                useForCalculation(result) {
+                    this.calcForm.activity_id = result.activity_id;
+                    this.calcForm.unit = result.unit;
+                    this.calcForm.unit_type = result.unit_type;
+                    this.calcForm.region = result.region;
+                    this.activeTab = 'calculate';
+                    this.success = 'Emission factor selected for calculation';
+                    setTimeout(() => this.success = '', 3000);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
